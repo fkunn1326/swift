@@ -826,6 +826,11 @@ void CrossModuleOptimization::makeFunctionUsableFromInline(SILFunction *function
 
 /// Make a nominal type, including it's context, usable from inline.
 void CrossModuleOptimization::makeDeclUsableFromInline(ValueDecl *decl) {
+  // In resilient Package CMO (conservative) mode, AST should
+  // not be modified by adding @usableFromInline to types.
+  if (isPackageCMOEnabled(M.getSwiftModule()))
+    return;
+
   if (decl->getEffectiveAccess() >= AccessLevel::Package)
     return;
 
@@ -835,6 +840,13 @@ void CrossModuleOptimization::makeDeclUsableFromInline(ValueDecl *decl) {
 
   if (!isPackageOrPublic(decl->getFormalAccess()) &&
       !decl->isUsableFromInline()) {
+    // FIXME: In the default (conservative) mode, below should not be
+    // called, as adding @usableFromInline modifies the AST. However,
+    // some existing apps might already rely on this code path even in
+    // default mode, in which case linker errors might get thrown without
+    // it. Should probably audit before restricting this path to only
+    // non-conservative modes.
+
     // Mark the nominal type as "usableFromInline".
     // TODO: find a way to do this without modifying the AST. The AST should be
     // immutable at this point.
