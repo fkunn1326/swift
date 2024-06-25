@@ -456,6 +456,12 @@ module WinSDK [system] {
         export *
       }
     }
+    module TextServices {
+      header "Msctf.h"
+      export *
+
+      link "Msctf.dll"
+    }
   }
 
   module URLMonikers {
